@@ -151,19 +151,47 @@ int protocol_catch(ptc_var_t *var)
 }
 
 //------------------------------------------------------------------------------
-void send_msg (jig_server_t *pserver, char cmd, char *pmsg)
+void send_msg (jig_server_t *pserver, char cmd, __u8 cmd_id, char *pmsg)
 {
 	protocol_t s;
 	int m_size;
+	__u8 *p = (__u8 *)&s;
 
 	memset (&s, 0, sizeof(protocol_t));
 	s.head = '@';	s.tail = '#';
 	s.cmd  = cmd;
+	sprintf(s.id, ",%03d,", cmd_id);
 
 	if (pmsg != NULL) {
 		m_size = strlen(pmsg);
 		m_size = (m_size > PROTOCOL_DATA_SIZE) ? PROTOCOL_DATA_SIZE : m_size;
 		strncpy (s.data, pmsg, m_size);
+	}
+	for (m_size = 0; m_size < sizeof(protocol_t); m_size++) {
+		queue_put(&pserver->puart[0]->tx_q, p + m_size);
+	}
+}
+
+//------------------------------------------------------------------------------
+void send_msg_check (jig_server_t *pserver)
+{
+	static struct timeval i_time;
+
+	if (pserver->cmd_run) {
+		if (run_interval_check(&i_time, 2000)) {
+			info ("Retry Send.... \n");
+			goto retry;
+		}
+		return;
+	}
+
+retry:
+	info ("%s : send id %d, msg = %s, protocol_size = %ld\n", __func__,
+			pserver->cmd_id, pserver->cmds[pserver->cmd_id], sizeof(protocol_t));
+	if (pserver->cmd_id < CMD_COUNT_MAX) {
+		send_msg (pserver, 'S', pserver->cmd_id, pserver->cmds[pserver->cmd_id]);
+		pserver->cmd_run = true;
+		run_interval_check (&i_time, 0);
 	}
 }
 
@@ -177,6 +205,7 @@ int server_main (jig_server_t *pserver)
     							protocol_check, protocol_catch, MsgData))
 			return 0;
 	}
+
 	while (1) {
 		time_display(pserver);
 
@@ -184,6 +213,8 @@ int server_main (jig_server_t *pserver)
 		receive_check(pserver->puart[0]);
 		if (pserver->dual_ch)
 			receive_check(pserver->puart[1]);
+
+		send_msg_check (pserver);
 
 		usleep(SYSTEM_LOOP_DELAY_uS);
 	}

@@ -171,9 +171,31 @@ void _parse_nlp_config (jig_server_t *pserver)
 }
 
 //------------------------------------------------------------------------------
+//CMD, GPIO, CON1.3, 493, 3,
+//CMD, GPIO, CON1.5, 494, 3,
 void _parse_cmd_config (jig_server_t *pserver)
 {
+	char *ptr;
 
+	if (pserver->cmd_cnt > CMD_COUNT_MAX)
+		return;
+
+	/* CMD가 GPIO인 경우 2개의 command생성, High, Low */
+	ptr = _str_remove_space(strtok(NULL, ","));
+	if (!strncmp (ptr, "GPIO", strlen("GPIO"))) {
+		int str_cnt = sprintf (pserver->cmds[pserver->cmd_cnt],
+									"GPIO,%s,%s,%s",
+									_str_remove_space(strtok(NULL, ",")),
+									_str_remove_space(strtok(NULL, ",")),
+									_str_remove_space(strtok(NULL, ",")));
+
+		pserver->cmd_cnt++;
+		strncpy ( pserver->cmds[pserver->cmd_cnt  ],
+				  pserver->cmds[pserver->cmd_cnt-1], str_cnt);
+		sprintf (&pserver->cmds[pserver->cmd_cnt  ][str_cnt], ",%d", 0);
+		sprintf (&pserver->cmds[pserver->cmd_cnt-1][str_cnt], ",%d", 1);
+		pserver->cmd_cnt++;
+	}
 }
 
 //------------------------------------------------------------------------------

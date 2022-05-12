@@ -16,6 +16,33 @@
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
+#define	PROTOCOL_DATA_SIZE	32
+
+#pragma packet(1)
+typedef struct protocol__t {
+	/* @ : start protocol signal */
+	__s8	head;
+
+	/*
+		command description:
+			server to client : 'C'ommand, 'R'eady(boot)
+			client to server : 'O'kay, 'A'ck, 'R'eady(boot), 'E'rror, 'B'usy
+	*/
+	__s8	cmd;
+
+	/* command id (0 ~ 999) */
+	__s8	id[5];
+
+	/* msg no, msg group, msg data1, msg data2, ... */
+	__s8	data[PROTOCOL_DATA_SIZE];
+
+	/* # : end protocol signal */
+	__s8	tail;
+}	protocol_t;
+
+//------------------------------------------------------------------------------
+#define	CMD_COUNT_MAX	128
+
 typedef struct jig_server__t {
 	/* build info */
 	char		bdate[32], btime[32];
@@ -33,29 +60,12 @@ typedef struct jig_server__t {
 	fb_info_t	*pfb;
 	ui_grp_t	*pui;
 	ptc_grp_t	*puart[2];
+
+	bool		cmd_run;
+	char		cmd_id;
+	char		cmd_cnt;
+	char		cmds[CMD_COUNT_MAX][PROTOCOL_DATA_SIZE];
 }	jig_server_t;
-
-//------------------------------------------------------------------------------
-#define	PROTOCOL_DATA_SIZE	32
-
-#pragma packet(1)
-typedef struct protocol__t {
-	/* @ : start protocol signal */
-	__s8	head;
-
-	/*
-		command description:
-			server to client : 'C'ommand, 'R'eady(boot)
-			client to server : 'O'kay, 'A'ck, 'R'eady(boot), 'E'rror, 'B'usy
-	*/
-	__s8	cmd;
-
-	/* msg no, msg group, msg data1, msg data2, ... */
-	__s8	data[PROTOCOL_DATA_SIZE];
-
-	/* # : end protocol signal */
-	__s8	tail;
-}	protocol_t;
 
 //------------------------------------------------------------------------------
 extern  int server_main (jig_server_t *pserver);
