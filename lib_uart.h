@@ -39,7 +39,6 @@ typedef struct protocol_variable__t {
 	bool	open;
 	bool	pass;
 	__u8	*buf;
-    void    *arg;
 }   ptc_var_t;
 
 typedef struct protocol_function__t {
@@ -63,7 +62,7 @@ extern  void        ptc_set_status  (ptc_grp_t *ptc_grp, __u8 ptc_num, bool stat
 extern  void        ptc_q           (ptc_grp_t *ptc_grp, __u8 ptc_num, __u8 idata);
 extern  void        ptc_event       (ptc_grp_t *ptc_grp, __u8 idata);
 extern  bool        ptc_func_init   (ptc_grp_t *ptc_grp, __u8 ptc_num, __u8 ptc_size, 
-                int (*chk_func)(ptc_var_t *var), int (*cat_func)(ptc_var_t *var), void *arg);
+                int (*chk_func)(ptc_var_t *var), int (*cat_func)(ptc_var_t *var));
 extern  bool        ptc_grp_init    (ptc_grp_t *ptc_grp, __u8 ptc_count);
 extern  void        ptc_grp_close   (ptc_grp_t *ptc_grp);
 //------------------------------------------------------------------------------

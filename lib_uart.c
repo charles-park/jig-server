@@ -28,7 +28,7 @@ void        ptc_set_status  (ptc_grp_t *ptc_grp, __u8 ptc_num, bool status);
 void        ptc_q           (ptc_grp_t *ptc_grp, __u8 ptc_num, __u8 idata);
 void        ptc_event       (ptc_grp_t *ptc_grp, __u8 idata);
 bool        ptc_func_init   (ptc_grp_t *ptc_grp, __u8 ptc_num, __u8 ptc_size, 
-        int (*chk_func)(ptc_var_t *var), int (*cat_func)(ptc_var_t *var), void *arg);
+        int (*chk_func)(ptc_var_t *var), int (*cat_func)(ptc_var_t *var));
 bool        ptc_grp_init    (ptc_grp_t *ptc_grp, __u8 ptc_count);
 void        ptc_grp_close   (ptc_grp_t *ptc_grp);
 ptc_grp_t   *uart_init      (const char *dev_name, speed_t baud);
@@ -130,7 +130,7 @@ void ptc_event (ptc_grp_t *ptc_grp, __u8 idata)
 //   UART Protocol Initiliaze Function
 //------------------------------------------------------------------------------
 bool ptc_func_init (ptc_grp_t *ptc_grp, __u8 ptc_num, __u8 ptc_size, 
-    int (*chk_func)(ptc_var_t *var), int (*cat_func)(ptc_var_t *var), void *arg)
+    int (*chk_func)(ptc_var_t *var), int (*cat_func)(ptc_var_t *var))
 {
     ptc_grp->p[ptc_num].var.p_ep = 0;
     ptc_grp->p[ptc_num].var.p_sp = 0;
@@ -139,7 +139,6 @@ bool ptc_func_init (ptc_grp_t *ptc_grp, __u8 ptc_num, __u8 ptc_size,
 
     ptc_grp->p[ptc_num].var.size = ptc_size;
     ptc_grp->p[ptc_num].var.buf  = (__u8 *)(malloc(sizeof(__u8) * ptc_size));
-    ptc_grp->p[ptc_num].var.arg  = arg;
     ptc_grp->p[ptc_num].pcheck   = chk_func;
     ptc_grp->p[ptc_num].pcatch   = cat_func;
 

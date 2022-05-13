@@ -104,26 +104,50 @@ void time_display (jig_server_t *pserver)
 }
 
 //------------------------------------------------------------------------------
-void receive_check(ptc_grp_t *ptc_grp)
+void catch_msg (ptc_var_t *var, __u8 *msg)
 {
+	int i;
+	/* header & cmd는 제외 */
+	for (i = 0; i < PROTOCOL_DATA_SIZE; i++)
+		msg[i] = var->buf[(var->p_sp + 2 + i) % var->size];
+}
+
+//------------------------------------------------------------------------------
+void recv_msg_check (jig_server_t *pserver, __s8 *msg, int ch)
+{
+	ptc_grp_t *ptc_grp = pserver->puart[ch];
 	__u8 idata, p_cnt;
 
+	/* uart data processing */
 	if (queue_get (&ptc_grp->rx_q, &idata))
 		ptc_event (ptc_grp, idata);
 
 	for (p_cnt = 0; p_cnt < ptc_grp->pcnt; p_cnt++) {
 		if (ptc_grp->p[p_cnt].var.pass) {
-			char *msg = (char *)ptc_grp->p[p_cnt].var.arg;
+			__s8 *ptr, cmd_id;
+
+			catch_msg (&ptc_grp->p[p_cnt].var, msg);
+			info ("pass message = %s\n", msg);
+
 			ptc_grp->p[p_cnt].var.pass = false;
 			ptc_grp->p[p_cnt].var.open = true;
-			info ("pass message = %s\n", msg);
+			#if 0
 			/*
-				cmd_id check & cmd_id++ if cmd_status == ok;
+				cmd & cmd_id check;
 			*/
+			ptr = strtok (msg, ",");	cmd_id = atoi(ptr);
+
+			ptr = strtok (NULL, ",");
+			if (!strncmp(ptr,  "GPIO", strlen("GPIO")))	run_gpio_cmd (pclient, cmd_id);
+			if (!strncmp(ptr,   "USB", strlen("USB")))	run_usb_cmd  (pclient, cmd_id);
+			if (!strncmp(ptr,  "UART", strlen("UART")))	run_uart_cmd (pclient, cmd_id);
+			#endif
+			memset(msg, 0, PROTOCOL_DATA_SIZE);
 		}
 	}
-};
+}
 
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 int protocol_check(ptc_var_t *var)
 {
@@ -137,14 +161,12 @@ int protocol_check(ptc_var_t *var)
 int protocol_catch(ptc_var_t *var)
 {
 	int i;
-	char *rdata = (char *)var->arg, resp = var->buf[(var->p_sp + 1) % var->size];
+	char resp = var->buf[(var->p_sp + 1) % var->size];
 
-	memset (rdata, 0, sizeof(PROTOCOL_DATA_SIZE));
 	switch (resp) {
 		case 'O':
 			for (i = 2; i < var->size -2; i++) {
-				rdata[i] = var->buf[(var->p_sp +i) % var->size];
-				printf("%c", rdata[i]);
+				printf("%c", var->buf[(var->p_sp +i) % var->size]);
 			}
 		break;
 		case 'A':	case 'R':	case 'B':
@@ -166,7 +188,7 @@ void send_msg (jig_server_t *pserver, char cmd, __u8 cmd_id, char *pmsg)
 	s.head = '@';	s.tail = '#';
 	s.cmd  = cmd;
 
-	pos = sprintf(s.data, ",%03d,", cmd_id);
+	pos = sprintf(s.data, "%03d,", cmd_id);
 
 	if (pmsg != NULL) {
 		m_size = strlen(pmsg);
@@ -209,7 +231,7 @@ int server_main (jig_server_t *pserver)
 
 	if (ptc_grp_init (pserver->puart[0], 1)) {
 		if (!ptc_func_init (pserver->puart[0], 0, sizeof(protocol_t), 
-    							protocol_check, protocol_catch, MsgData))
+    							protocol_check, protocol_catch))
 			return 0;
 	}
 
@@ -217,9 +239,9 @@ int server_main (jig_server_t *pserver)
 		time_display(pserver);
 
 		/* uart data processing */
-		receive_check(pserver->puart[0]);
+		recv_msg_check(pserver, MsgData, 0);
 		if (pserver->dual_ch)
-			receive_check(pserver->puart[1]);
+			recv_msg_check(pserver, MsgData, 1);
 
 		send_msg_check (pserver);
 
