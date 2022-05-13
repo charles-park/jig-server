@@ -142,8 +142,10 @@ int protocol_catch(ptc_var_t *var)
 	memset (rdata, 0, sizeof(PROTOCOL_DATA_SIZE));
 	switch (resp) {
 		case 'O':
-			for (i = 2; i < var->size -2; i++)
+			for (i = 2; i < var->size -2; i++) {
 				rdata[i] = var->buf[(var->p_sp +i) % var->size];
+				printf("%c", rdata[i]);
+			}
 		break;
 		case 'A':	case 'R':	case 'B':
 		default :
@@ -194,7 +196,7 @@ retry:
 	info ("%s : send id %d, msg = %s, protocol_size = %ld\n", __func__,
 			pserver->cmd_id, pserver->cmds[pserver->cmd_id], sizeof(protocol_t));
 	if (pserver->cmd_id < CMD_COUNT_MAX) {
-		send_msg (pserver, 'S', pserver->cmd_id, pserver->cmds[pserver->cmd_id]);
+		send_msg (pserver, 'C', pserver->cmd_id, pserver->cmds[pserver->cmd_id]);
 		pserver->cmd_run = true;
 		run_interval_check (&i_time, 0);
 	}
