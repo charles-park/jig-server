@@ -30,9 +30,6 @@ typedef struct protocol__t {
 	*/
 	__s8	cmd;
 
-	/* command id (0 ~ 999) */
-	__s8	id[5];
-
 	/* msg no, msg group, msg data1, msg data2, ... */
 	__s8	data[PROTOCOL_DATA_SIZE];
 

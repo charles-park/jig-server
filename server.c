@@ -117,6 +117,9 @@ void receive_check(ptc_grp_t *ptc_grp)
 			ptc_grp->p[p_cnt].var.pass = false;
 			ptc_grp->p[p_cnt].var.open = true;
 			info ("pass message = %s\n", msg);
+			/*
+				cmd_id check & cmd_id++ if cmd_status == ok;
+			*/
 		}
 	}
 };
@@ -134,7 +137,7 @@ int protocol_check(ptc_var_t *var)
 int protocol_catch(ptc_var_t *var)
 {
 	int i;
-	char *rdata = (char *)var->arg, resp = var->buf[(var->p_sp) % var->size];
+	char *rdata = (char *)var->arg, resp = var->buf[(var->p_sp + 1) % var->size];
 
 	memset (rdata, 0, sizeof(PROTOCOL_DATA_SIZE));
 	switch (resp) {
@@ -154,18 +157,20 @@ int protocol_catch(ptc_var_t *var)
 void send_msg (jig_server_t *pserver, char cmd, __u8 cmd_id, char *pmsg)
 {
 	protocol_t s;
-	int m_size;
+	int m_size, pos;
 	__u8 *p = (__u8 *)&s;
 
 	memset (&s, 0, sizeof(protocol_t));
 	s.head = '@';	s.tail = '#';
 	s.cmd  = cmd;
-	sprintf(s.id, ",%03d,", cmd_id);
+
+	pos = sprintf(s.data, ",%03d,", cmd_id);
 
 	if (pmsg != NULL) {
 		m_size = strlen(pmsg);
-		m_size = (m_size > PROTOCOL_DATA_SIZE) ? PROTOCOL_DATA_SIZE : m_size;
-		strncpy (s.data, pmsg, m_size);
+		m_size = (m_size > (PROTOCOL_DATA_SIZE - pos)) ?
+							(PROTOCOL_DATA_SIZE - pos) : m_size;
+		strncpy (&s.data[pos], pmsg, m_size);
 	}
 	for (m_size = 0; m_size < sizeof(protocol_t); m_size++) {
 		queue_put(&pserver->puart[0]->tx_q, p + m_size);
