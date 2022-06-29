@@ -383,6 +383,7 @@ fb_info_t *fb_init (const char *DEVICE_NAME)
 	}
 
     fb->data = fb->base + ((unsigned long) ffsi.smem_start % (unsigned long) getpagesize());
+    fb_clear(fb);
     return  fb;
 out:
     fb_close(fb);
